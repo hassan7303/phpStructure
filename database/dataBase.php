@@ -5,11 +5,10 @@ namespace database;
 use PDO;
 use PDOException;
 
-class Database
-{
-    private $prefix = 10;
+class Database{
+
     private $connection;
-    private $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'];
+    private $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8');
     private $dbHost = DB_HOST;
     private $dbUserName = DB_USERNAME;
     private $dbName = DB_NAME;
@@ -17,70 +16,121 @@ class Database
 
     function __construct()
     {
-        try {
-            $this->connection = new PDO("mysql:host=" . $this->dbHost . ";dbname=" . $this->dbName, $this->dbUserName, $this->dbPassword, $this->options);
-        } catch (PDOException $e) {
-            error_log(
-                "errorMessage" . $e->getMessage() . "line" . self::$prefix . __LINE__,
-                3,
-                "../storage/logs/error.log"
-            );
-            echo "اتصال به دیتا بیس با خطا مواجه شد";
+        try
+        {
+            $this->connection = new PDO("mysql:host=" . $this->dbHost. ";dbname=" . $this->dbName, $this->dbUserName, $this->dbPassword, $this->options);
+            echo 'ok';
+        }
+        catch(PDOException $e){
+            echo $e->getMessage();
             exit;
-
         }
     }
+
+
+    // select('select * from users');
+    // select('select * from users where id = ?', [2]);
     public function select($sql, $values = null)
     {
-        try {
+        try{
             $stmt = $this->connection->prepare($sql);
-            if ($values === null) {
+            if($values == null)
+            {
                 $stmt->execute();
-            } else {
+            }
+            else
+            {
                 $stmt->execute($values);
             }
             $result = $stmt;
-            return [
-                "status" => true,
-                'data' => $result
-            ];
-        } catch (PDOException $e) {
-            error_log(
-                "errorMessage" . $e->getMessage() . "line" . self::$prefix . __LINE__,
-                3,
-                "../storage/logs/error.log"
-            );
-            return [
-                "status" => false,
-                'snackbar' => [
-                    'type' => "error",
-                    'message' => "اتصال به دیتا بیس با خطا مواجه شد",
-                ],
-            ];
+            return $result;
+        }
+        catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
         }
 
     }
-    //insert("users",['name','age'],['hassan','23']);
-    public function insert($tableName,$fields,$values){
-        try {
-            $stmt = $this->connection->prepare("INSERT INTO".$tableName."(".implode(', ', $fields)." , created_at) VALUES ( :" . implode(', :', $fields) . " , now() );");
+
+
+    // insert('users', ['username', 'password', 'age'], ['hassank2', '1234', 30]);
+    public function insert($tableName, $fields, $values)
+    {
+        try{
+            // 'username' => 'hassank2', 'password' => '1234', 'age' => 30
+            $stmt = $this->connection->prepare("INSERT INTO ".$tableName."(".implode(', ', $fields)." , created_at) VALUES ( :" . implode(', :', $fields) . " , now() );");
             $stmt->execute(array_combine($fields, $values));
             return true;
-        } catch (PDOException $e) {
-            error_log(
-                "errorMessage" . $e->getMessage() . "line" . self::$prefix . __LINE__,
-                3,
-                "../storage/logs/error.log"
-            );
-            return [
-                "status" => false,
-                'snackbar' => [
-                    'type' => "error",
-                    'message' => "اتصال به دیتا بیس با خطا مواجه شد",
-                ],
-            ];
+        }
+        catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+    // update('users', 2, ['username', 'password'], ['alik2', 12345]);
+    public function update($tableName, $id, $fields, $values)
+    {
+
+        $sql = "UPDATE " . $tableName . " SET";
+        foreach(array_combine($fields, $values) as $field => $value)
+        {
+            if($value)
+            {
+                $sql .= " `" . $field . "` = ? ,";
+            }
+            else{
+                $sql .= " `" . $field . "` = NULL ,";
+
+            }
         }
 
+        $sql .= " updated_at = now()";
+        $sql .= " WHERE id = ?";
+        try{
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute(array_merge(array_filter(array_values($values)), [$id]));
+            return true;
+        }
+
+        catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+
+
     }
+
+    // delete('users', 2);
+    public function delete($tableName, $id)
+    {
+        $sql = "DELETE FROM " . $tableName . " WHERE id = ? ;";
+        try{
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute([$id]);
+            return true;
+        }
+
+        catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+
+
+    public function createTable($sql)
+    {
+        try{
+            $this->connection->exec($sql);
+            return true;
+        }
+        catch(PDOException $e){
+            echo $e->getMessage();
+            return false;
+        }
+        
+    }
+
 
 }

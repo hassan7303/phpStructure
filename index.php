@@ -79,7 +79,7 @@ function uri($reservedUrl, $class, $method, $requestMethod = 'GET')
     $currentUrl = trim($currentUrl, '/');
     $currentUrlArray = explode('/', $currentUrl);
     $currentUrlArray = array_filter($currentUrlArray);
-    
+
     $reservedUrl = trim($reservedUrl, '/');
     $reservedUrlArray = explode('/', $reservedUrl);
     $reservedUrlArray = array_filter($reservedUrlArray);
